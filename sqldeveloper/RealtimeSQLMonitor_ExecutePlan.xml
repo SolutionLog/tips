@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?><displays><display id="e15bb702-0139-1000-8002-0ae48a21dcde" type="" style="Table" enable="true">
+	<name><![CDATA[Realtime SQL Monitor & Execute Plan]]></name>
+	<description><![CDATA[Displays the SQL statements that are automatically monitored by Oracle, 
+when sql statement is to be performed in parallel or when CPU or I/O Time to be consumed more than 5 seconds,]]></description>
+	<tooltip><![CDATA[sql monitor]]></tooltip>
+	<drillclass><![CDATA[null]]></drillclass>
+	<CustomValues>
+		<TYPE>horizontal</TYPE>
+	</CustomValues>
+	<query>
+		<sql><![CDATA[select vsm.status                                               "STATUS"
+      ,vsm.sql_id                                               "SQL_ID"
+      ,vs.child_number                                          "CHILD_NUMBER"
+      ,to_char(vsm.sql_exec_start, 'yyyy-mm-dd hh24:mi:ss')     "START_TIME"
+      ,ROUND((vsm.elapsed_time/1000/1000),2)                    "ELAPSED_TIME(sec)"
+      ,to_char(vsm.last_refresh_time, 'yyyy-mm-dd hh24:mi:ss')  "LAST_REFRESH_TIME"
+      ,vsm.module                                               "MODULE"
+      ,vs.sql_fulltext                                          "SQL_FULLTEXT"
+      ,ROUND((vsm.cpu_time/1000/1000),2)                        "CPU TIME(sec)"
+      ,vsm.fetches                                              "FETCHES"
+      ,vsm.buffer_gets                                          "BUFFER_GETS"
+      ,vsm.disk_reads                                           "DISK_READS"
+      ,vsm.physical_read_requests                               "PHYSICAL_READ_REQUESTS"
+      ,ROUND((vsm.physical_read_bytes/1024/1024),2)             "PHYSICAL_READ_BYTES(MB)"
+      ,ROUND((vsm.user_io_wait_time/1000/1000),2)               "USER_IO_WAIT_TIME(sec)"
+      ,ROUND((vsm.plsql_exec_time/1000/1000),2)                 "PLSQL_EXEC_TIME(sec)"
+      ,vsm.sid                                                  "SID"
+      ,vsm.session_serial#                                      "SERIAL#"
+      ,vsm.sql_plan_hash_value                                  "PLAN_HASH"
+from  v$sql_monitor vsm, v$sql vs
+where vsm.sql_id = vs.sql_id
+and   vsm.sql_child_address = vs.child_address
+order by start_time]]></sql>
+		<binds>
+			<bind id="SQL_ID">
+				<prompt><![CDATA[SQL_ID]]></prompt>
+				<value><![CDATA[gscxv94qjbpqb]]></value>
+			</bind>
+		</binds>
+	</query>
+	<display id="null" type="子" style="Table" enable="true">
+		<name><![CDATA[Execute Plan]]></name>
+		<description><![CDATA[Obtained from the V$SQL_PLAN individual SQL execution plan obtained in real-time SQL monitoring]]></description>
+		<tooltip><![CDATA[ execute plan]]></tooltip>
+		<drillclass><![CDATA[null]]></drillclass>
+		<CustomValues>
+			<TYPE>horizontal</TYPE>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select  id
+      , lpad(' ',depth) || operation operation
+      , options
+      , object_name
+      , optimizer
+      , cost
+      , cpu_cost
+      , io_cost
+      , bytes
+from v$sql_plan 
+where sql_id = :SQL_ID
+AND   child_number = :CHILD_NUMBER
+start with id = 0
+connect by (prior id = parent_id
+and prior sql_id = sql_id
+and prior child_number = child_number
+)
+order siblings by id, position]]></sql>
+		</query>
+	</display>
+</display>
+</displays>
